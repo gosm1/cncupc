@@ -193,7 +193,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact en cas d'urgence</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact en cas d&apos;urgence</h3>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">

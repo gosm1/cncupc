@@ -239,16 +239,20 @@ export default function RegisterPage() {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 <ImageIcon className="w-4 h-4 inline mr-2" />
-                Photo de la CIN (Carte d'Identité Nationale) *
+                Photo de la CIN (Carte d&apos;Identité Nationale) *
               </label>
               {cinPreview ? (
                 <div className="relative">
                   <div className="border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <img
-                      src={cinPreview}
-                      alt="CIN Preview"
-                      className="w-full h-48 object-contain rounded-lg"
-                    />
+                    <div className="relative w-full h-48">
+                      <Image
+                        src={cinPreview}
+                        alt="CIN Preview"
+                        fill
+                        className="object-contain rounded-lg"
+                        unoptimized
+                      />
+                    </div>
                   </div>
                   <button
                     type="button"

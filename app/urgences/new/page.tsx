@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { Camera, Video, Mic, MapPin, Loader2, X, Sparkles, Car, Flame, Waves, Activity, HeartPulse, AlertTriangle } from 'lucide-react';
 import { incidentStorage } from '@/lib/storage';
@@ -246,7 +247,17 @@ export default function NewUrgencePage() {
               <div className="mt-4 grid grid-cols-3 gap-4">
                 {attachments.map((attachment, index) => (
                   <div key={index} className="relative">
-                    {attachment.type === 'image' && <img src={attachment.preview} alt={`Attachment ${index + 1}`} className="w-full h-24 object-cover rounded-lg" />}
+                    {attachment.type === 'image' && (
+                      <div className="relative w-full h-24">
+                        <Image
+                          src={attachment.preview}
+                          alt={`Attachment ${index + 1}`}
+                          fill
+                          className="object-cover rounded-lg"
+                          unoptimized
+                        />
+                      </div>
+                    )}
                     {attachment.type === 'video' && <video src={attachment.preview} className="w-full h-24 object-cover rounded-lg" />}
                     {attachment.type === 'audio' && <div className="w-full h-24 bg-gray-100 rounded-lg flex items-center justify-center"><Mic className="w-8 h-8 text-gray-400" /></div>}
                     <button type="button" onClick={() => removeAttachment(index)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"><X className="w-4 h-4" /></button>
