@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
-import { incidentAPI, notificationAPI } from '@/lib/api';
 import { AlertCircle, MapPin, Clock, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import { incidentStorage, alertStorage } from '@/lib/storage';
 
 interface Incident {
-  id: number;
+  id: string;
   type: string;
   sousType: string;
   latitude: number;
@@ -20,7 +20,7 @@ interface Incident {
 }
 
 interface Alert {
-  id: number;
+  id: string;
   titre: string;
   message: string;
   niveau: string;
@@ -38,6 +38,28 @@ export default function DashboardPage() {
     myIncidents: 0,
   });
 
+  const loadData = useCallback(() => {
+    try {
+      const allIncidents = incidentStorage.getAll();
+      const alertsData = alertStorage.getAll(true);
+
+      // Filtere nach Benutzer, wenn Citizen
+      const myIncidents = user?.role === 'CITIZEN' && user.id
+        ? incidentStorage.getByUserId(user.id.toString())
+        : [];
+
+      setIncidents(allIncidents.slice(0, 5) as unknown as Incident[]);
+      setAlerts(alertsData.slice(0, 3) as unknown as Alert[]);
+      setStats({
+        totalIncidents: allIncidents.length,
+        activeIncidents: allIncidents.filter(i => i.statut !== 'RESOLU').length,
+        myIncidents: myIncidents.length,
+      });
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       router.push('/login');
@@ -48,47 +70,18 @@ export default function DashboardPage() {
     if (isAuthenticated && user) {
       loadData();
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, loadData]);
 
-  const loadData = async () => {
-    try {
-      // Load active incidents
-      const [urgences, problemes, alertsData] = await Promise.all([
-        incidentAPI.getByType('URGENCE_VITALE').catch(() => []),
-        incidentAPI.getByType('PROBLEME_CIVIL').catch(() => []),
-        notificationAPI.getAlerts(undefined, true).catch(() => []),
-      ]);
-
-      const allIncidents = [...urgences, ...problemes];
-      setIncidents(allIncidents.slice(0, 5));
-      setAlerts(alertsData.slice(0, 3));
-
-      // Load user incidents if citizen
-      if (user?.role === 'CITIZEN' && user.id) {
-        const myIncidents = await incidentAPI.getUserIncidents(user.id.toString()).catch(() => []);
-        setStats({
-          totalIncidents: allIncidents.length,
-          activeIncidents: allIncidents.filter((i: Incident) => i.statut !== 'RESOLU').length,
-          myIncidents: myIncidents.length,
-        });
-      } else {
-        setStats({
-          totalIncidents: allIncidents.length,
-          activeIncidents: allIncidents.filter((i: Incident) => i.statut !== 'RESOLU').length,
-          myIncidents: 0,
-        });
-      }
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    }
-  };
-
-  if (loading || !isAuthenticated) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
       </div>
     );
+  }
+
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (
@@ -147,13 +140,23 @@ export default function DashboardPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Actions rapides</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link
-              href="/incidents/new"
-              className="flex items-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-colors"
+              href="/urgences/new"
+              className="flex items-center p-4 border-2 border-dashed border-red-300 rounded-lg hover:border-red-500 hover:bg-red-50 transition-colors"
             >
-              <AlertCircle className="w-6 h-6 text-primary-600 mr-3" />
+              <AlertCircle className="w-6 h-6 text-red-600 mr-3" />
               <div>
-                <p className="font-medium text-gray-900">Signaler un incident</p>
-                <p className="text-sm text-gray-500">Créer un nouveau signalement</p>
+                <p className="font-medium text-gray-900">Signaler une urgence vitale</p>
+                <p className="text-sm text-gray-500">Accident, incendie, blessure...</p>
+              </div>
+            </Link>
+            <Link
+              href="/problemes/new"
+              className="flex items-center p-4 border-2 border-dashed border-yellow-300 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 transition-colors"
+            >
+              <AlertCircle className="w-6 h-6 text-yellow-600 mr-3" />
+              <div>
+                <p className="font-medium text-gray-900">Signaler un problème civil</p>
+                <p className="text-sm text-gray-500">Feu rouge, nid de poule, éclairage...</p>
               </div>
             </Link>
             <Link
@@ -187,19 +190,17 @@ export default function DashboardPage() {
                 {incidents.map((incident) => (
                   <div key={incident.id} className="flex items-start p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
                     <div className="flex-shrink-0">
-                      <AlertCircle className={`w-6 h-6 ${
-                        incident.type === 'URGENCE_VITALE' ? 'text-red-600' : 'text-yellow-600'
-                      }`} />
+                      <AlertCircle className={`w-6 h-6 ${incident.type === 'URGENCE_VITALE' ? 'text-red-600' : 'text-yellow-600'
+                        }`} />
                     </div>
                     <div className="ml-4 flex-1">
                       <div className="flex justify-between">
                         <p className="font-medium text-gray-900">{incident.sousType}</p>
-                        <span className={`px-2 py-1 text-xs rounded ${
-                          incident.statut === 'ALERTE_RECUE' ? 'bg-yellow-100 text-yellow-800' :
+                        <span className={`px-2 py-1 text-xs rounded ${incident.statut === 'ALERTE_RECUE' ? 'bg-yellow-100 text-yellow-800' :
                           incident.statut === 'SECOURS_EN_ROUTE' ? 'bg-blue-100 text-blue-800' :
-                          incident.statut === 'RESOLU' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
+                            incident.statut === 'RESOLU' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                          }`}>
                           {incident.statut}
                         </span>
                       </div>

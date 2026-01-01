@@ -1,0 +1,46 @@
+@startuml Diagramme d'État - Incident
+!theme plain
+
+title Diagramme d'État : Cycle de Vie d'un Incident
+
+[*] --> ALERTE_RECUE : Signalement créé
+
+state ALERTE_RECUE {
+    state "En attente de traitement" as waiting
+}
+
+ALERTE_RECUE --> SECOURS_EN_ROUTE : Admin assigne\nl'incident
+
+state SECOURS_EN_ROUTE {
+    state "Équipe dépêchée" as dispatched
+    note right of dispatched
+        Notification envoyée
+        au citoyen
+    end note
+}
+
+SECOURS_EN_ROUTE --> EN_COURS : Intervention\ncommencée
+
+state EN_COURS {
+    state "Traitement actif" as processing
+    processing : L'équipe est sur place
+    processing : Travaux en cours
+}
+
+EN_COURS --> RESOLU : Incident\ntraité
+
+state RESOLU {
+    state "Clôturé" as closed
+    note right of closed
+        Notification finale
+        envoyée au citoyen
+    end note
+}
+
+RESOLU --> [*]
+
+' Transitions alternatives
+ALERTE_RECUE --> RESOLU : Fausse alerte\n(Admin)
+SECOURS_EN_ROUTE --> ALERTE_RECUE : Réaffectation\n(Admin)
+
+@enduml

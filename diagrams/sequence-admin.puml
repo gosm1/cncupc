@@ -1,0 +1,49 @@
+@startuml Diagramme de Séquence - Gestion Admin
+!theme plain
+skinparam sequenceMessageAlign center
+
+title Diagramme de Séquence : Gestion d'un Incident par l'Administrateur
+
+actor "Administrateur\nRégional" as admin
+participant "Application\nFrontend" as app
+participant "Stockage\nLocal" as storage
+participant "Système de\nNotification" as notif
+actor "Citoyen" as user
+
+== Consultation des Incidents ==
+admin -> app : Connexion
+app -> storage : Récupère incidents région
+storage --> app : Liste incidents
+app --> admin : Affiche tableau de bord\navec statistiques
+
+admin -> app : Clique "Incidents"
+app --> admin : Affiche liste incidents\nfiltrée par région
+
+== Traitement d'un Incident ==
+admin -> app : Sélectionne incident
+app -> storage : Récupère détails
+storage --> app : Données complètes
+app --> admin : Affiche détails incident\n(localisation, photos, description)
+
+admin -> app : Change statut\n"SECOURS_EN_ROUTE"
+app -> storage : Met à jour statut
+storage --> app : Confirmation
+
+app -> notif : Déclenche notification
+notif --> user : "Secours en route"
+
+== Ajout de Commentaire ==
+admin -> app : Ajoute commentaire
+app -> storage : Sauvegarde commentaire
+storage --> app : Confirmation
+app --> admin : Commentaire ajouté
+
+== Résolution ==
+admin -> app : Change statut "RESOLU"
+app -> storage : Met à jour statut
+storage --> app : Confirmation
+
+app -> notif : Déclenche notification
+notif --> user : "Incident résolu"
+
+@enduml

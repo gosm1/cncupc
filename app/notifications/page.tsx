@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
-import { notificationAPI } from '@/lib/api';
 import { Bell, AlertTriangle, Info } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { alertStorage } from '@/lib/storage';
 
 interface Alert {
   id: number;
@@ -29,23 +28,23 @@ export default function NotificationsPage() {
     }
   }, [isAuthenticated, loading, router]);
 
+  const loadAlerts = useCallback(() => {
+    setLoadingAlerts(true);
+    try {
+      const alertsData = alertStorage.getAll(true);
+      setAlerts(alertsData as unknown as Alert[]);
+    } catch (error) {
+      console.error('Erreur lors du chargement des alertes:', error);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated) {
       loadAlerts();
     }
-  }, [isAuthenticated]);
-
-  const loadAlerts = async () => {
-    setLoadingAlerts(true);
-    try {
-      const data = await notificationAPI.getAlerts(undefined, true);
-      setAlerts(data);
-    } catch (error) {
-      toast.error('Erreur lors du chargement des alertes');
-    } finally {
-      setLoadingAlerts(false);
-    }
-  };
+  }, [isAuthenticated, loadAlerts]);
 
   const getLevelColor = (niveau: string) => {
     switch (niveau) {

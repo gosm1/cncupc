@@ -1,0 +1,160 @@
+@startuml Diagramme de Classe
+!theme plain
+skinparam classAttributeIconSize 0
+
+' Classes principales
+class User {
+    - id: string
+    - email: string
+    - telephone: string
+    - nomComplet: string
+    - role: UserRole
+    - centreRegional: string
+    - actif: boolean
+    - dateCreation: Date
+    --
+    + login(): boolean
+    + logout(): void
+    + updateProfile(): void
+    + getNotifications(): Notification[]
+}
+
+enum UserRole {
+    CITIZEN
+    REGIONAL_ADMIN
+    SUPER_ADMIN
+}
+
+class Incident {
+    - id: string
+    - type: IncidentType
+    - sousType: string
+    - latitude: number
+    - longitude: number
+    - adresse: string
+    - description: string
+    - nombreVictimes: number
+    - niveauDanger: number
+    - statut: IncidentStatus
+    - piecesJointes: string[]
+    - dateCreation: Date
+    - dateMiseAJour: Date
+    - region: string
+    - commentaires: Comment[]
+    - assigne: string
+    --
+    + create(): Incident
+    + updateStatus(): void
+    + addComment(): void
+    + addMedia(): void
+    + getLocation(): Location
+}
+
+enum IncidentType {
+    URGENCE_VITALE
+    PROBLEME_CIVIL
+}
+
+enum IncidentStatus {
+    ALERTE_RECUE
+    SECOURS_EN_ROUTE
+    EN_COURS
+    RESOLU
+}
+
+class Alert {
+    - id: string
+    - titre: string
+    - message: string
+    - niveau: AlertLevel
+    - actif: boolean
+    - dateCreation: Date
+    - dateExpiration: Date
+    - region: string
+    - scope: AlertScope
+    --
+    + create(): Alert
+    + update(): void
+    + deactivate(): void
+    + getActiveAlerts(): Alert[]
+}
+
+enum AlertLevel {
+    CRITIQUE
+    ELEVE
+    MOYEN
+    FAIBLE
+}
+
+enum AlertScope {
+    GLOBAL
+    REGIONAL
+}
+
+class Guide {
+    - id: string
+    - titre: string
+    - contenu: string
+    - categorie: string
+    - dateCreation: Date
+    --
+    + create(): Guide
+    + getByCategorie(): Guide[]
+}
+
+class RegionalAdmin {
+    - id: string
+    - nomComplet: string
+    - email: string
+    - telephone: string
+    - region: string
+    - permissions: Permissions
+    - notificationsActives: boolean
+    - dateCreation: Date
+    - actif: boolean
+    --
+    + create(): RegionalAdmin
+    + updatePermissions(): void
+    + deactivate(): void
+}
+
+class Permissions {
+    - lecture: boolean
+    - edition: boolean
+    - suppression: boolean
+}
+
+class Comment {
+    - auteur: string
+    - message: string
+    - date: Date
+}
+
+class AIVision {
+    - confidence: number
+    --
+    + detectIncidentFromImage(image: File): AIDetectionResult
+    + fileToBase64(file: File): string
+}
+
+class AIDetectionResult {
+    - type: IncidentType
+    - sousType: string
+    - confidence: number
+    - description: string
+}
+
+' Relations
+User "1" --> "*" Incident : signale
+User "1" --> "1" UserRole : a
+Incident "1" --> "1" IncidentType : est de type
+Incident "1" --> "1" IncidentStatus : a
+Incident "1" --> "*" Comment : contient
+Alert "1" --> "1" AlertLevel : a
+Alert "1" --> "1" AlertScope : appartient à
+RegionalAdmin "1" --> "1" Permissions : possède
+RegionalAdmin --|> User : hérite
+AIVision ..> AIDetectionResult : retourne
+Incident ..> AIVision : utilise
+
+@enduml

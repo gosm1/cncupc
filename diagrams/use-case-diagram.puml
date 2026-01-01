@@ -1,0 +1,95 @@
+@startuml Diagramme de Cas d'Utilisation
+!theme plain
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+
+left to right direction
+
+' Acteurs
+actor "Citoyen" as citizen
+actor "Administrateur\nRégional" as regional_admin
+actor "Super\nAdministrateur" as super_admin
+
+' Système
+rectangle "Application de Signalement des Urgences" {
+    ' Fonctionnalités Citoyens
+    package "Gestion des Signalements" {
+        usecase "S'inscrire" as UC1
+        usecase "Se connecter" as UC2
+        usecase "Signaler une urgence vitale" as UC3
+        usecase "Signaler un problème civil" as UC4
+        usecase "Ajouter photos/vidéos" as UC5
+        usecase "Géolocalisation automatique" as UC6
+        usecase "Consulter historique" as UC7
+        usecase "Suivre statut incident" as UC8
+    }
+    
+    ' Fonctionnalités Consultation
+    package "Consultation" {
+        usecase "Consulter alertes officielles" as UC9
+        usecase "Visualiser carte interactive" as UC10
+        usecase "Consulter guides prévention" as UC11
+        usecase "Gérer profil" as UC12
+    }
+    
+    ' Fonctionnalités Administration
+    package "Administration" {
+        usecase "Gérer incidents" as UC13
+        usecase "Modifier statut incident" as UC14
+        usecase "Créer alerte régionale" as UC15
+        usecase "Créer alerte globale" as UC16
+        usecase "Gérer administrateurs régionaux" as UC17
+        usecase "Consulter statistiques" as UC18
+    }
+    
+    ' Module AI
+    package "Intelligence Artificielle" {
+        usecase "Analyser photo (AI Vision)" as UC19
+        usecase "Détection automatique incident" as UC20
+    }
+}
+
+' Relations Citoyen
+citizen --> UC1
+citizen --> UC2
+citizen --> UC3
+citizen --> UC4
+citizen --> UC7
+citizen --> UC8
+citizen --> UC9
+citizen --> UC10
+citizen --> UC11
+citizen --> UC12
+
+' Extensions
+UC3 ..> UC5 : <<include>>
+UC3 ..> UC6 : <<include>>
+UC4 ..> UC5 : <<include>>
+UC4 ..> UC6 : <<include>>
+UC5 ..> UC19 : <<extend>>
+UC19 ..> UC20 : <<include>>
+
+' Relations Admin Régional
+regional_admin --> UC2
+regional_admin --> UC9
+regional_admin --> UC10
+regional_admin --> UC13
+regional_admin --> UC14
+regional_admin --> UC15
+regional_admin --> UC18
+
+' Relations Super Admin
+super_admin --> UC2
+super_admin --> UC9
+super_admin --> UC10
+super_admin --> UC13
+super_admin --> UC14
+super_admin --> UC16
+super_admin --> UC17
+super_admin --> UC18
+
+' Héritage
+regional_admin --|> citizen
+super_admin --|> regional_admin
+
+@enduml

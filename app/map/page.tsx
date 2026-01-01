@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
-import { incidentAPI } from '@/lib/api';
 import dynamic from 'next/dynamic';
 import { AlertCircle } from 'lucide-react';
+import { incidentStorage } from '@/lib/storage';
 
 // Dynamically import Map component to avoid SSR issues
 const MapComponent = dynamic(() => import('@/components/IncidentMap'), {
@@ -36,26 +36,23 @@ export default function MapPage() {
     }
   }, [isAuthenticated, loading, router]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      loadIncidents();
-    }
-  }, [isAuthenticated]);
-
-  const loadIncidents = async () => {
+  const loadIncidents = useCallback(() => {
     setLoadingIncidents(true);
     try {
-      const [urgences, problemes] = await Promise.all([
-        incidentAPI.getByType('URGENCE_VITALE').catch(() => []),
-        incidentAPI.getByType('PROBLEME_CIVIL').catch(() => []),
-      ]);
-      setIncidents([...urgences, ...problemes]);
+      const allIncidents = incidentStorage.getAll();
+      setIncidents(allIncidents as unknown as Incident[]);
     } catch (error) {
       console.error('Error loading incidents:', error);
     } finally {
       setLoadingIncidents(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadIncidents();
+    }
+  }, [isAuthenticated, loadIncidents]);
 
   if (loading || !isAuthenticated) {
     return (
@@ -71,7 +68,7 @@ export default function MapPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Carte des incidents</h1>
           <p className="mt-2 text-gray-600">
-            {incidents.length} incident(s) affiché(s) sur la carte
+            {incidents.length} incident(s) affiché(s) sur la carte (Casablanca)
           </p>
         </div>
 

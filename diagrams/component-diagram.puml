@@ -1,0 +1,71 @@
+@startuml Diagramme de Composants
+!theme plain
+
+title Diagramme de Composants : Architecture de l'Application
+
+package "Frontend (Next.js)" {
+    [Pages] as pages
+    [Composants React] as components
+    [Contextes] as contexts
+    
+    package "Pages" {
+        [Dashboard] as dashboard
+        [Signalement Urgence] as urgence
+        [Signalement Problème] as probleme
+        [Carte Interactive] as map
+        [Alertes] as alerts
+        [Guides] as guides
+        [Profil] as profile
+        [Historique] as historique
+        [Administration] as admin
+        [Connexion/Inscription] as auth
+    }
+    
+    package "Composants" {
+        [Layout] as layout
+        [IncidentMap] as incidentmap
+        [StorageInitializer] as storageinit
+    }
+    
+    package "Contextes" {
+        [AuthContext] as authctx
+    }
+}
+
+package "Bibliothèques (Lib)" {
+    [Storage] as storage
+    [AI Vision] as aivision
+}
+
+package "Types TypeScript" {
+    [User] as usertype
+    [Incident] as incidenttype
+    [Alert] as alerttype
+}
+
+database "LocalStorage" as localstorage {
+    [urgences_incidents]
+    [urgences_alerts]
+    [urgences_guides]
+    [urgences_regional_admins]
+}
+
+cloud "Services Externes" {
+    [API Géolocalisation] as geoloc
+    [Leaflet Maps] as leaflet
+}
+
+' Relations
+pages --> components : utilise
+pages --> contexts : utilise
+components --> storage : accède
+urgence --> aivision : utilise
+probleme --> aivision : utilise
+storage --> localstorage : persiste
+map --> leaflet : affiche
+incidentmap --> leaflet : utilise
+urgence --> geoloc : position
+probleme --> geoloc : position
+authctx --> localstorage : session
+
+@enduml

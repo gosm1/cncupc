@@ -1,16 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
-import { incidentAPI } from '@/lib/api';
 import { AlertCircle, Plus, MapPin } from 'lucide-react';
 import Link from 'next/link';
-import toast from 'react-hot-toast';
+import { incidentStorage } from '@/lib/storage';
 
 interface Incident {
-  id: number;
+  id: string;
   type: string;
   sousType: string;
   latitude: number;
@@ -35,31 +34,34 @@ export default function IncidentsPage() {
     }
   }, [isAuthenticated, loading, router]);
 
+  const loadIncidents = useCallback(() => {
+    setLoadingIncidents(true);
+    try {
+      let allIncidents = incidentStorage.getAll();
+
+      // Filter nach Typ
+      if (filter !== 'ALL') {
+        allIncidents = allIncidents.filter(i => i.type === filter);
+      }
+
+      // Sortiere nach Datum (neueste zuerst)
+      allIncidents.sort((a, b) =>
+        new Date(b.dateCreation).getTime() - new Date(a.dateCreation).getTime()
+      );
+
+      setIncidents(allIncidents as unknown as Incident[]);
+    } catch (error) {
+      console.error('Erreur lors du chargement des incidents:', error);
+    } finally {
+      setLoadingIncidents(false);
+    }
+  }, [filter]);
+
   useEffect(() => {
     if (isAuthenticated) {
       loadIncidents();
     }
-  }, [isAuthenticated, filter]);
-
-  const loadIncidents = async () => {
-    setLoadingIncidents(true);
-    try {
-      if (filter === 'ALL') {
-        const [urgences, problemes] = await Promise.all([
-          incidentAPI.getByType('URGENCE_VITALE').catch(() => []),
-          incidentAPI.getByType('PROBLEME_CIVIL').catch(() => []),
-        ]);
-        setIncidents([...urgences, ...problemes]);
-      } else {
-        const data = await incidentAPI.getByType(filter);
-        setIncidents(data);
-      }
-    } catch (error) {
-      toast.error('Erreur lors du chargement des incidents');
-    } finally {
-      setLoadingIncidents(false);
-    }
-  };
+  }, [isAuthenticated, loadIncidents]);
 
   if (loading || !isAuthenticated) {
     return (
@@ -77,13 +79,22 @@ export default function IncidentsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Incidents</h1>
             <p className="mt-2 text-gray-600">Gérer et suivre les signalements</p>
           </div>
-          <Link
-            href="/incidents/new"
-            className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Nouveau signalement
-          </Link>
+          <div className="flex space-x-2">
+            <Link
+              href="/urgences/new"
+              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Urgence vitale
+            </Link>
+            <Link
+              href="/problemes/new"
+              className="flex items-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Problème civil
+            </Link>
+          </div>
         </div>
 
         {/* Filters */}
@@ -91,31 +102,28 @@ export default function IncidentsPage() {
           <div className="flex space-x-4">
             <button
               onClick={() => setFilter('ALL')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === 'ALL'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'ALL'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Tous
             </button>
             <button
               onClick={() => setFilter('URGENCE_VITALE')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === 'URGENCE_VITALE'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'URGENCE_VITALE'
+                ? 'bg-red-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Urgences vitales
             </button>
             <button
               onClick={() => setFilter('PROBLEME_CIVIL')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filter === 'PROBLEME_CIVIL'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${filter === 'PROBLEME_CIVIL'
+                ? 'bg-yellow-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               Problèmes civils
             </button>
@@ -144,12 +152,10 @@ export default function IncidentsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-lg ${
-                          incident.type === 'URGENCE_VITALE' ? 'bg-red-100' : 'bg-yellow-100'
-                        }`}>
-                          <AlertCircle className={`w-5 h-5 ${
-                            incident.type === 'URGENCE_VITALE' ? 'text-red-600' : 'text-yellow-600'
-                          }`} />
+                        <div className={`p-2 rounded-lg ${incident.type === 'URGENCE_VITALE' ? 'bg-red-100' : 'bg-yellow-100'
+                          }`}>
+                          <AlertCircle className={`w-5 h-5 ${incident.type === 'URGENCE_VITALE' ? 'text-red-600' : 'text-yellow-600'
+                            }`} />
                         </div>
                         <div>
                           <h3 className="font-semibold text-gray-900">{incident.sousType}</h3>
@@ -172,12 +178,11 @@ export default function IncidentsPage() {
                       </div>
                     </div>
                     <div className="ml-4">
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                        incident.statut === 'ALERTE_RECUE' ? 'bg-yellow-100 text-yellow-800' :
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${incident.statut === 'ALERTE_RECUE' ? 'bg-yellow-100 text-yellow-800' :
                         incident.statut === 'SECOURS_EN_ROUTE' ? 'bg-blue-100 text-blue-800' :
-                        incident.statut === 'RESOLU' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                          incident.statut === 'RESOLU' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                        }`}>
                         {incident.statut}
                       </span>
                     </div>

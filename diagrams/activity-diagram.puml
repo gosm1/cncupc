@@ -1,0 +1,80 @@
+@startuml Diagramme d'Activité - Signalement
+!theme plain
+
+title Diagramme d'Activité : Processus de Signalement d'Urgence
+
+start
+
+:Utilisateur ouvre l'application;
+
+if (Connecté?) then (non)
+    :Afficher page de connexion;
+    :Saisir identifiants;
+    if (Identifiants valides?) then (oui)
+        :Authentification réussie;
+    else (non)
+        :Afficher erreur;
+        stop
+    endif
+else (oui)
+endif
+
+:Afficher tableau de bord;
+
+:Cliquer sur "Signaler Urgence";
+
+fork
+    :Obtenir position GPS automatique;
+fork again
+    :Afficher formulaire de signalement;
+end fork
+
+:Sélectionner type d'incident;
+
+switch (Type d'incident?)
+case (Urgence vitale)
+    :Afficher sous-types urgence;
+    note right: Incendie, Accident,\nBlessure, etc.
+case (Problème civil)
+    :Afficher sous-types civil;
+    note right: Nid de poule, Feu rouge\ncassé, etc.
+endswitch
+
+:Sélectionner sous-type;
+
+:Ajouter description;
+
+if (Ajouter photo?) then (oui)
+    :Prendre/Sélectionner photo;
+    :Envoyer à AI Vision;
+    
+    if (Détection réussie?) then (oui)
+        :Proposer type détecté;
+        if (Utilisateur accepte?) then (oui)
+            :Appliquer suggestion;
+        else (non)
+            :Garder sélection manuelle;
+        endif
+    else (non)
+        :Continuer sans suggestion;
+    endif
+else (non)
+endif
+
+:Indiquer nombre de victimes;
+
+:Évaluer niveau de danger;
+
+:Soumettre signalement;
+
+:Enregistrer dans stockage local;
+
+:Afficher confirmation;
+
+:Envoyer notification;
+
+:Créer entrée dans historique;
+
+stop
+
+@enduml

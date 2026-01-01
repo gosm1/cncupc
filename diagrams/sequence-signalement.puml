@@ -1,0 +1,57 @@
+@startuml Diagramme de Séquence - Signalement Urgence
+!theme plain
+skinparam sequenceMessageAlign center
+
+title Diagramme de Séquence : Signalement d'une Urgence
+
+actor "Citoyen" as user
+participant "Application\nFrontend" as app
+participant "Géolocalisation\nGPS" as gps
+participant "Module\nAI Vision" as ai
+participant "Stockage\nLocal" as storage
+participant "Système de\nNotification" as notif
+
+== Authentification ==
+user -> app : Ouvre l'application
+app -> app : Vérifie session
+app --> user : Affiche tableau de bord
+
+== Création du Signalement ==
+user -> app : Clique "Signaler Urgence"
+app --> user : Affiche formulaire
+
+app -> gps : Demande position
+gps --> app : Retourne coordonnées GPS
+app --> user : Affiche position sur carte
+
+user -> app : Sélectionne type d'incident
+user -> app : Ajoute description
+
+== Analyse Photo (Optionnel) ==
+alt Ajout de photo
+    user -> app : Prend/Sélectionne photo
+    app -> ai : Envoie image pour analyse
+    ai -> ai : Analyse image
+    ai --> app : Retourne type détecté\n+ niveau de confiance
+    app --> user : Propose type détecté
+    user -> app : Confirme ou modifie
+end
+
+== Soumission ==
+user -> app : Soumet le signalement
+app -> storage : Sauvegarde incident
+storage --> app : Confirmation ID incident
+app --> user : Affiche confirmation\n"Alerte reçue"
+
+== Notifications ==
+app -> notif : Déclenche notification
+notif --> user : Push notification\n"Signalement enregistré"
+
+== Suivi Statut ==
+loop Mise à jour statut
+    storage -> app : Changement de statut
+    app -> notif : Notification
+    notif --> user : "Secours en route" /\n"Incident résolu"
+end
+
+@enduml

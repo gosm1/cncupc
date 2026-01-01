@@ -26,7 +26,7 @@ interface IncidentMapProps {
 }
 
 export default function IncidentMap({ incidents }: IncidentMapProps) {
-  const defaultCenter: [number, number] = [36.8065, 10.1815]; // Tunisia center
+  const defaultCenter: [number, number] = [33.5731, -7.5898]; // Casablanca, Morocco
 
   const getMarkerColor = (type: string) => {
     return type === 'URGENCE_VITALE' ? 'red' : 'yellow';

@@ -1,8 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import Cookies from 'js-cookie';
-import { authAPI } from '@/lib/api';
+import React, { createContext, useContext, useState } from 'react';
 
 interface User {
   id: number;
@@ -12,13 +10,19 @@ interface User {
   role: string;
   centreRegional?: string;
   actif: boolean;
+  adresse?: string;
+  contactUrgence?: string;
+  telephoneUrgence?: string;
+  notificationsActives?: boolean;
+  cin?: string; // Base64 string of CIN image
+  region?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  login: (nomComplet: string, role?: string, region?: string) => void;
+  register: (data: RegisterData) => void;
+  updateUser: (updates: Partial<User>) => void;
   logout: () => void;
   loading: boolean;
   isAuthenticated: boolean;
@@ -29,62 +33,54 @@ interface RegisterData {
   password: string;
   telephone: string;
   nomComplet: string;
+  cin?: string; // Base64 string of CIN image
+  region?: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
 
-  useEffect(() => {
-    const storedToken = Cookies.get('token');
-    const storedUser = Cookies.get('user');
-
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Error parsing user data:', e);
-      }
-    }
-    setLoading(false);
-  }, []);
-
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await authAPI.login(email, password);
-      
-      if (!response || !response.token || !response.user) {
-        throw new Error('Réponse invalide du serveur');
-      }
-      
-      const { token: newToken, user: userData } = response;
-      
-      Cookies.set('token', newToken, { expires: 7 });
-      Cookies.set('user', JSON.stringify(userData), { expires: 7 });
-      
-      setToken(newToken);
-      setUser(userData);
-    } catch (error: any) {
-      console.error('AuthContext login error:', error);
-      throw error;
-    }
-  };
-
-  const register = async (data: RegisterData) => {
-    const userData = await authAPI.register(data);
-    // After registration, automatically log in
-    // Note: You might need to adjust this based on your API response
+  const login = (nomComplet: string, role?: string, region?: string) => {
+    // Einfaches State-Management ohne Backend
+    const isAdminName = nomComplet.toLowerCase().includes('admin') || role === 'SUPER_ADMIN' || role === 'REGIONAL_ADMIN';
+    const finalRole = isAdminName ? 'SUPER_ADMIN' : (role || 'CITIZEN');
+    const userData: User = {
+      id: Date.now(), // Einfache ID-Generierung
+      email: '',
+      telephone: '',
+      nomComplet: nomComplet,
+      role: finalRole,
+      centreRegional: finalRole === 'REGIONAL_ADMIN' ? (region || 'Casablanca-Settat') : undefined,
+      actif: true,
+    };
     setUser(userData);
   };
 
+  const register = (data: RegisterData) => {
+    // Einfaches State-Management ohne Backend
+    const userData: User = {
+      id: Date.now(), // Einfache ID-Generierung
+      email: data.email,
+      telephone: data.telephone,
+      nomComplet: data.nomComplet,
+      role: 'CITIZEN', // Standard-Rolle
+      actif: true,
+      cin: data.cin,
+      region: data.region,
+    };
+    setUser(userData);
+  };
+
+  const updateUser = (updates: Partial<User>) => {
+    if (user) {
+      setUser({ ...user, ...updates });
+    }
+  };
+
   const logout = () => {
-    Cookies.remove('token');
-    Cookies.remove('user');
-    setToken(null);
     setUser(null);
   };
 
@@ -92,12 +88,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        token,
         login,
         register,
+        updateUser,
         logout,
         loading,
-        isAuthenticated: !!user && !!token,
+        isAuthenticated: !!user,
       }}
     >
       {children}
